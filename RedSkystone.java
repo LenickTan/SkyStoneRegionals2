@@ -151,15 +151,16 @@ public class RedSkystone extends LinearOpMode {
     // These constants define the desired driving/control characteristics
     // The can/should be tweaked to suite the specific robot drive train.
     static final double     DRIVE_SPEED             = 0.7;     // Nominal speed for better accuracy.
-    static final double     TURN_SPEED              = 0.5;     // Nominal half speed for better accuracy.
-    static final double     STRAFE_SPEED            = 0.5;
+    static final double     TURN_SPEED              = 0.4;     // Nominal half speed for better accuracy.
+    static final double     STRAFE_SPEED            = 0.7;
 
-    static final double     HEADING_THRESHOLD       = 0.5 ;      // As tight as we can make it with an integer gyro
-    static final double     P_TURN_COEFF            = 0.3;     // Larger is more responsive, but also less stable
-    static final double     P_DRIVE_COEFF           = 0.3;     // Larger is more responsive, but also less stable
+    static final double     HEADING_THRESHOLD       = 0.3;      // As tight as we can make it with an integer gyro
+    static final double     P_TURN_COEFF            = 0.1;     // Larger is more responsive, but also less stable
+    static final double     P_DRIVE_COEFF           = 0.1;     // Larger is more responsive, but also less stable
 
     private double prevAngle = 0;
     private int stone = 3;
+    private double z;
 
     @Override
     public void runOpMode() {
@@ -230,7 +231,7 @@ public class RedSkystone extends LinearOpMode {
             //telemetry.addData(">", "Robot Heading = %d", imu.getAngularOrientation());
             //telemetry.update();
         }
-
+        //TOP
         while (opModeIsActive()) {
             // Step through each leg of the path,
             // Note: Reverse movement is obtained by setting a negative distance (not speed)
@@ -239,13 +240,17 @@ public class RedSkystone extends LinearOpMode {
             telemetry.update();
 
             gyroDrive(DRIVE_SPEED, 14,0);
-            gyroTurn(TURN_SPEED, 83);
-            gyroHold(0,83,0.3);
-            //arms down
+            gyroTurn2(TURN_SPEED, 90);
+            gyroHold2(TURN_SPEED,90, 0.1);
+            armsDown();
 
-            while (!targetVisible) {
+            ElapsedTime scanTimer = new ElapsedTime();
+            // keep looping while we have time remaining.
+            scanTimer.reset();
+            while (!targetVisible || scanTimer.time() >= 2) {
                 // check all the trackable targets to see which one (if any) is visible.
-
+                telemetry.addData("Timer: ", scanTimer.time());
+                telemetry.addData("Scanning: ", !targetVisible || scanTimer.time() >= 3);
                 for (VuforiaTrackable trackable : allTrackables) {
                     if (((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible()) {
                         telemetry.addData("Visible Target", trackable.getName());
@@ -261,7 +266,6 @@ public class RedSkystone extends LinearOpMode {
                         break;
                     }
                 }
-
                 telemetry.update();
             }
             if (targetVisible) {
@@ -281,75 +285,101 @@ public class RedSkystone extends LinearOpMode {
             } else {
                 telemetry.addData("Target Visible", "none");
             }
-            telemetry.update();
-
             telemetry.addData("Stone ", stone);
             telemetry.update();
-            resetIntZ();
+
             switch(stone) {
                 case 1:
-                    closeFoundation();
-                    gyroStrafe(STRAFE_SPEED, -14, 0);
-                    resetIntZ();
-                    //grab
-                    //lift arm
+                    gyroStrafe(STRAFE_SPEED, -13, 0);
+                    gyroHold2(TURN_SPEED,90, 0.1);
+                    grab1();
+                    armsUp();
+                    gyroStrafe(STRAFE_SPEED, 7, 0);
+                    gyroHold(TURN_SPEED,90,0.1);
                     gyroDrive(DRIVE_SPEED, 72, 0);
-                    gyroHold(0,0,1);
-                    //drop arm
-                    //release
+                    gyroHold(TURN_SPEED,90,0.1);
+                    gyroStrafe(STRAFE_SPEED, -7, 0);
+                    gyroHold2(TURN_SPEED,90,0.1);
+                    armsDown();
+                    release();
+                    gyroStrafe(STRAFE_SPEED, 7, 0);
+                    gyroHold(TURN_SPEED,90,0.1);
                     gyroDrive(DRIVE_SPEED, -96, 0);
-                    gyroHold(0,90,1);
-                    //grab
-                    //lift arm
+                    gyroHold(TURN_SPEED,90,0.1);
+                    gyroStrafe(STRAFE_SPEED, -7, 0);
+                    gyroHold2(TURN_SPEED,90,0.1);
+                    grab1();
+                    armsUp();
+                    gyroStrafe(STRAFE_SPEED, 7, 0);
+                    gyroHold(TURN_SPEED, 90, 0);
                     gyroDrive(DRIVE_SPEED, 104, 0);
-                    gyroHold(0,0,1);
+                    gyroHold(TURN_SPEED,90,0.1);
+                    break;
                 case 2:
-                    gyroStrafe(STRAFE_SPEED, -14, 0);
-                    gyroHold(0,0,1);
-                    resetIntZ();
-                    //grab
-                    //lift arm
+                    gyroStrafe(STRAFE_SPEED, -13, 0);
+                    gyroTurn(TURN_SPEED,90);
+                    grab1();
+                    armsUp();
+                    gyroStrafe(STRAFE_SPEED, 3, 0);
+                    gyroHold(TURN_SPEED,90,0.1);
                     gyroDrive(DRIVE_SPEED, 84, 0);
-                    gyroHold(0,0,1);
-                    //drop arm
-                    //release
+                    gyroHold(TURN_SPEED,90,0.1);
+                    gyroStrafe(0.3, -3, 0);
+                    armsDown();
+                    release();
+                    gyroStrafe(STRAFE_SPEED, 3, 0);
+                    gyroHold(TURN_SPEED,90,0.1);
                     gyroDrive(DRIVE_SPEED, -108, 0);
-                    gyroHold(0,0,1);
-                    //grab
-                    //lift arm
+                    gyroHold(TURN_SPEED,90,0.1);
+                    gyroStrafe(0.3, -3, 0);
+                    gyroHold(TURN_SPEED,90,0.1);
+                    grab1();
+                    armsUp();
+                    gyroStrafe(STRAFE_SPEED, 3, 0);
                     gyroDrive(DRIVE_SPEED, 116, 0);
-                    gyroHold(0,0,1);
+                    gyroHold(TURN_SPEED,90,0.1);
+                    break;
                 case 3:
                     gyroDrive(DRIVE_SPEED, -4,0);
                     gyroHold(0,0,1);
-                    gyroStrafe(STRAFE_SPEED, -14, 0);
-                    gyroHold(0,0,1);
-                    resetIntZ();
-                    //grab
-                    //lift arm
+                    gyroStrafe(STRAFE_SPEED, -13, 0);
+                    gyroTurn(TURN_SPEED,90);
+                    grab1();
+                    armsUp();
+                    gyroStrafe(STRAFE_SPEED, 3, 0);
+                    gyroHold(TURN_SPEED,90,0.1);
                     gyroDrive(DRIVE_SPEED, 88, 0);
-                    gyroHold(0,0,1);
-                    //drop arm
-                    //release
+                    gyroHold(TURN_SPEED,90,0.1);
+                    gyroStrafe(0.3, -3, 0);
+                    armsDown();
+                    release();
+                    gyroStrafe(STRAFE_SPEED, 3, 0);
+                    gyroHold(TURN_SPEED,90,0.1);
                     gyroDrive(DRIVE_SPEED, -112, 0);
-                    gyroHold(0,0,1);
-                    //grab
-                    //lift arm
+                    gyroHold(TURN_SPEED,90,0.1);
+                    gyroStrafe(0.3, -3, 0);
+                    gyroHold(TURN_SPEED,90,0.1);
+                    grab1();
+                    armsUp();
+                    gyroStrafe(STRAFE_SPEED, 3, 0);
                     gyroDrive(DRIVE_SPEED, 120, 0);
-                    gyroHold(0,0,1);
+                    gyroHold(TURN_SPEED,90,0.1);
+                    break;
             }
-            //release
-            gyroTurn(TURN_SPEED, 90);
-            gyroHold(0,0,0.3);
+            gyroStrafe(STRAFE_SPEED, -7,90);
+            release();
+            gyroTurn2(TURN_SPEED, 0);
+            //gyroHold(TURN_SPEED,0,0.1);
+            gyroDrive(0.4, 3,0);
             gyroDrive(0.2, 3,0);
             closeFoundation();
-            gyroDrive(DRIVE_SPEED, -12, 0);
-            gyroTurn(TURN_SPEED,90);
-            gyroHold(0,0,0.3);
+            gyroHold(0,0,1);
+            gyroDrive(1, -24, 0);
+            gyroTurn2(TURN_SPEED,90);
             openFoundation();
-            gyroTurn(TURN_SPEED, -90);
-            gyroHold(0,0,0.3);
+            gyroTurn(TURN_SPEED, 180);
             extendMTape();
+            gyroHold(0,180,10);
 
 
 
@@ -365,9 +395,36 @@ public class RedSkystone extends LinearOpMode {
 
         }
     }
+
+    private void grab1(){
+        robot.grab1.setPosition(0);
+    }
+
+    private void grab2(){
+        robot.grab2.setPosition(1);
+    }
+
+    private void release(){
+        robot.grab1.setPosition(1);
+        robot.grab2.setPosition(0);
+    }
+
+    private void armsDown(){
+        robot.arm1.setPosition(0);
+        robot.arm2.setPosition(1);
+        robot.grab1.setPosition(1);
+        robot.grab2.setPosition(0);
+    }
+
+    private void armsUp(){
+        robot.arm1.setPosition(1);
+        robot.arm2.setPosition(0);
+    }
+
     private void extendMTape(){
-        robot.mTape.setPower(1);
+        robot.mTape.setPower(-1);
         sleep(2000);
+        robot.mTape.setPower(0);
     }
 
     private void closeFoundation(){
@@ -444,10 +501,10 @@ public class RedSkystone extends LinearOpMode {
             robot.rightBack.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
             // start motion.
-            robot.leftFront.setPower(speed*0.4);
-            robot.rightFront.setPower(speed*0.4);
-            robot.leftBack.setPower(speed*0.4);
-            robot.rightBack.setPower(speed*0.4);
+            robot.leftFront.setPower(speed*0.2);
+            robot.rightFront.setPower(speed*0.2);
+            robot.leftBack.setPower(speed*0.2);
+            robot.rightBack.setPower(speed*0.2);
 
 
             // keep looping while we are still active, and BOTH motors are running.
@@ -484,11 +541,12 @@ public class RedSkystone extends LinearOpMode {
                 telemetry.addData("Err/St",  "%5.1f/%5.1f",  error, steer);
                 //telemetry.addData("Target",  "%7d:%7d",      newLeftFrontTarget,  newRightFrontTarget,  newLeftBackTarget,  newRightBackTarget);
                 //telemetry.addData("Actual",  "%7d:%7d",      robot.leftFront.getCurrentPosition(),
-                        //robot.leftBack.getCurrentPosition(),
-                        //robot.rightFront.getCurrentPosition(),
-                        //robot.rightBack.getCurrentPosition());
+                //robot.leftBack.getCurrentPosition(),
+                //robot.rightFront.getCurrentPosition(),
+                //robot.rightBack.getCurrentPosition());
                 telemetry.addData("Left Speed",   "%5.2f",  leftSpeed);
                 telemetry.addData("Right Speed",   "%5.2f",  rightSpeed);
+                telemetry.addData("Angle: ", intZ());
                 telemetry.update();
             }
 
@@ -522,9 +580,23 @@ public class RedSkystone extends LinearOpMode {
         // keep looping while we are still active, and not on heading.
         while (opModeIsActive() && !onHeading(speed, angle, P_TURN_COEFF)) {
             // Update telemetry & Allow time for other processes to run.
+            telemetry.addData("Current Angle: ", intZ());
+            telemetry.addData("Target Angle : ", intZ());
             telemetry.update();
         }
     }
+
+    public void gyroTurn2 (  double speed, double angle) {
+
+        // keep looping while we are still active, and not on heading.
+        while (opModeIsActive() && !onHeading2(speed, angle, P_TURN_COEFF)) {
+            // Update telemetry & Allow time for other processes to run.
+            telemetry.addData("Current Angle: ", intZ());
+            telemetry.addData("Target Angle : ", intZ());
+            telemetry.update();
+        }
+    }
+
 
 
     public void gyroStrafe ( double speed,
@@ -539,8 +611,10 @@ public class RedSkystone extends LinearOpMode {
         double  max;
         double  error;
         double  steer;
-        double  forwardSpeed;
-        double  backwardSpeed;
+        double  frontLeftSpeed;
+        double  backLeftSpeed;
+        double  frontRightSpeed;
+        double  backRightSpeed;
 
         // Ensure that the opmode is still active
         if (opModeIsActive()) {
@@ -575,39 +649,43 @@ public class RedSkystone extends LinearOpMode {
             while (opModeIsActive() &&
                     (robot.leftFront.isBusy() && robot.rightFront.isBusy() && robot.rightBack.isBusy() && robot.leftBack.isBusy())) {
 
-                // adjust relative speed based on heading error.
                 error = getError(angle);
                 steer = getDriveSteer(error, P_DRIVE_COEFF);
 
-                // if driving in reverse, the motor correction also needs to be reversed
                 if (distance < 0) {
                     steer *= -1.0;
                 }
 
-                forwardSpeed = speed - steer;
-                backwardSpeed = speed + steer;
+                frontLeftSpeed = speed - steer;
+                backLeftSpeed  = speed - steer;
+                frontRightSpeed = speed + steer;
+                backRightSpeed = speed + steer;
+
 
                 // Normalize speeds if either one exceeds +/- 1.0;
-                max = Math.max(Math.abs(forwardSpeed), Math.abs(backwardSpeed));
+                max = Math.max(Math.max(Math.abs(backLeftSpeed), Math.abs(backRightSpeed)) , Math.max(Math.abs(frontLeftSpeed), Math.abs(frontRightSpeed)));
                 if (max > 1.0)
                 {
-                    forwardSpeed /= max;
-                    backwardSpeed /= max;
+
+                    backLeftSpeed /= max;
+                    backRightSpeed /= max;
+                    frontLeftSpeed /= max;
+                    frontRightSpeed /= max;
                 }
 
-                robot.leftFront.setPower(forwardSpeed);
-                robot.leftBack.setPower(backwardSpeed);
-                robot.rightFront.setPower(backwardSpeed);
-                robot.rightBack.setPower(forwardSpeed);
+                robot.leftFront.setPower(frontLeftSpeed);
+                robot.leftBack.setPower(backLeftSpeed);
+                robot.rightFront.setPower(frontRightSpeed);
+                robot.rightBack.setPower(backRightSpeed);
 
                 // Display drive status for the driver.
-                telemetry.addData("Err/St",  "%5.1f/%5.1f",  error, steer);
                 telemetry.addData("Target",  "%7d:%7d",      newLeftFrontTarget,  newRightFrontTarget,  newLeftBackTarget,  newRightBackTarget);
                 telemetry.addData("Actual",  "%7d:%7d",      robot.leftFront.getCurrentPosition(),
                         robot.leftBack.getCurrentPosition(),
                         robot.rightFront.getCurrentPosition(),
                         robot.rightBack.getCurrentPosition());
-                telemetry.addData("Speed",   "%5.2f:%5.2f",  forwardSpeed, backwardSpeed);
+                telemetry.addData("Right Speed: ",   "%5.2f:%5.2f", frontRightSpeed , backRightSpeed);
+                telemetry.addData("Left Speed : ",   "%5.2f:%5.2f", frontLeftSpeed , backLeftSpeed);
                 telemetry.update();
             }
 
@@ -641,9 +719,28 @@ public class RedSkystone extends LinearOpMode {
 
         // keep looping while we have time remaining.
         holdTimer.reset();
-        while (opModeIsActive() && (holdTimer.time() < holdTime)) {
+        while (opModeIsActive() && (holdTimer.time() <= holdTime)) {
             // Update telemetry & Allow time for other processes to run.
             onHeading(speed, angle, P_TURN_COEFF);
+            telemetry.update();
+        }
+
+        // Stop all motion;
+        robot.leftFront.setPower(0);
+        robot.rightBack.setPower(0);
+        robot.leftBack.setPower(0);
+        robot.rightBack.setPower(0);
+    }
+
+    public void gyroHold2( double speed, double angle, double holdTime) {
+
+        ElapsedTime holdTimer = new ElapsedTime();
+
+        // keep looping while we have time remaining.
+        holdTimer.reset();
+        while (opModeIsActive() && (holdTimer.time() <= holdTime)) {
+            // Update telemetry & Allow time for other processes to run.
+            onHeading2(speed, angle, P_TURN_COEFF);
             telemetry.update();
         }
 
@@ -679,8 +776,7 @@ public class RedSkystone extends LinearOpMode {
             leftSpeed  = 0.0;
             rightSpeed = 0.0;
             onTarget = true;
-        }
-        else {
+        } else {
             steer = getTurnSteer(error, PCoeff);
             rightSpeed  = speed * steer;
             leftSpeed   = -rightSpeed;
@@ -700,89 +796,40 @@ public class RedSkystone extends LinearOpMode {
         return onTarget;
     }
 
-   /* public void drop(boolean present){
-        if (present){
-            robot.arm.setPosition(1);
-        } else {
-            robot.arm.setPosition(0);
+    boolean onHeading2(double speed, double angle, double PCoeff) {
+        double   error ;
+        double   steer ;
+        boolean  onTarget = false ;
+        double leftSpeed;
+        double rightSpeed;
+
+        // determine turn power based on +/- error
+        error = getError(angle);
+
+        if (Math.abs(error) <= 1) {
+            steer = 0.0;
+            leftSpeed  = 0.0;
+            rightSpeed = 0.0;
+            onTarget = true;
         }
-    } */
-
-
-    //----------------------------------------------------------------------------------------------
-    // Telemetry Configuration
-    //----------------------------------------------------------------------------------------------
-
-    void composeTelemetry() {
-
-        // At the beginning of each telemetry update, grab a bunch of data
-        // from the IMU that we will then display in separate lines.
-        telemetry.addAction(new Runnable() { @Override public void run()
-        {
-            // Acquiring the angles is relatively expensive; we don't want
-            // to do that in each of the three items that need that info, as that's
-            // three times the necessary expense.
-            angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            gravity  = imu.getGravity();
+        else {
+            steer = getTurnSteer(error, PCoeff);
+            rightSpeed  = speed * steer;
+            leftSpeed   = -rightSpeed;
         }
-        });
 
-        telemetry.addLine()
-                .addData("status", new Func<String>() {
-                    @Override public String value() {
-                        return imu.getSystemStatus().toShortString();
-                    }
-                })
-                .addData("calib", new Func<String>() {
-                    @Override public String value() {
-                        return imu.getCalibrationStatus().toString();
-                    }
-                });
+        // Send desired speeds to motors.
+        robot.leftFront.setPower(leftSpeed);
+        robot.leftBack.setPower(leftSpeed);
+        robot.rightFront.setPower(rightSpeed);
+        robot.rightBack.setPower(rightSpeed);
 
-        telemetry.addLine()
-                .addData("heading", new Func<String>() {
-                    @Override public String value() {
-                        return formatAngle(angles.angleUnit, angles.firstAngle);
-                    }
-                })
-                .addData("roll", new Func<String>() {
-                    @Override public String value() {
-                        return formatAngle(angles.angleUnit, angles.secondAngle);
-                    }
-                })
-                .addData("pitch", new Func<String>() {
-                    @Override public String value() {
-                        return formatAngle(angles.angleUnit, angles.thirdAngle);
-                    }
-                });
+        // Display it for the driver.
+        telemetry.addData("Target", "%5.2f", angle);
+        telemetry.addData("Err/St", "%5.2f/%5.2f", error, steer);
+        telemetry.addData("Speed.", "%5.2f:%5.2f", leftSpeed, rightSpeed);
 
-        telemetry.addLine()
-                .addData("grvty", new Func<String>() {
-                    @Override public String value() {
-                        return gravity.toString();
-                    }
-                })
-                .addData("mag", new Func<String>() {
-                    @Override public String value() {
-                        return String.format(Locale.getDefault(), "%.3f",
-                                Math.sqrt(gravity.xAccel*gravity.xAccel
-                                        + gravity.yAccel*gravity.yAccel
-                                        + gravity.zAccel*gravity.zAccel));
-                    }
-                });
-    }
-
-
-    //----------------------------------------------------------------------------------------------
-    // Formatting
-    //----------------------------------------------------------------------------------------------
-
-    String formatAngle(AngleUnit angleUnit, double angle) {
-        return formatDegrees(AngleUnit.DEGREES.fromUnit(angleUnit, angle));
-    }
-
-    String formatDegrees(double degrees){
-        return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
+        return onTarget;
     }
 
     /**
@@ -809,6 +856,7 @@ public class RedSkystone extends LinearOpMode {
     public void resetIntZ(){
         angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
         prevAngle = angles.firstAngle;
+
     }
 
     /**
@@ -821,7 +869,7 @@ public class RedSkystone extends LinearOpMode {
         return Range.clip(error * PCoeff, 0, 0.5);
     }
     public double getTurnSteer(double error, double PCoeff) {
-        return Range.clip(error * PCoeff, -0.5, 0.5);
+        return Range.clip(error * PCoeff, -0.75, 0.75);
     }
 
 }
